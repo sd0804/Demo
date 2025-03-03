@@ -8,6 +8,7 @@ pipeline {
         REGION = 'us-central1'
         CLUSTER_NAME = 'autopilot-cluster-1'
         IMAGE_NAME = "gcr.io/${PROJECT_ID}/demo:latest"
+        DOCKER_ARGS = "-v /var/run/docker.sock:/var/run/docker.sock"
     }
     stages {
         stage('Checkout') {
@@ -23,26 +24,28 @@ pipeline {
             }
         }
         stage('Build Docker Image') {
-            steps {
-                // Build the Docker image using the Dockerfile in the repo
-                def dockerImage = docker.image("docker:latest")
-                                   // Run commands inside the container with the Docker socket mounted
-                                   dockerImage.inside("-v /var/run/docker.sock:/var/run/docker.sock")  {
-                                        sh "docker build -t ${IMAGE_NAME} ."
-                                    }
-            }
+             steps {
+                            script {
+                                // Use the official Docker image (which includes the Docker CLI)
+                                def dockerImage = docker.image('docker:latest')
+                                // Run Docker commands inside a container with the host Docker socket mounted
+                                dockerImage.inside(env.DOCKER_ARGS) {
+                                    sh "docker build -t ${env.IMAGE_NAME} ."
+                                }
+                            }
+                        }
         }
         stage('Push Docker Image to GCR') {
-            steps {
-                // Authenticate Docker to GCR (if not already configured)
-              def dockerImage = docker.image("docker:latest")
-                                 // Run commands inside the container with the Docker socket mounted
-                                 dockerImage.inside("-v /var/run/docker.sock:/var/run/docker.sock")  {
-                                      // Authenticate with GCR and push the image.
-                                      sh 'gcloud auth configure-docker'
-                                      sh "docker push ${IMAGE_NAME}"
-                                  }
-            }
+           steps {
+                           script {
+                               def dockerImage = docker.image('docker:latest')
+                               dockerImage.inside(env.DOCKER_ARGS) {
+                                   // Configure authentication to push to GCR
+                                   sh 'gcloud auth configure-docker'
+                                   sh "docker push ${env.IMAGE_NAME}"
+                               }
+                           }
+                       }
         }
         stage('Deploy to GKE') {
             steps {
