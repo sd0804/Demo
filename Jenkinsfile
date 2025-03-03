@@ -1,10 +1,5 @@
 pipeline {
-   agent {
-           docker {
-               image 'docker:latest'
-               args '-v /var/run/docker.sock:/var/run/docker.sock'
-           }
-       }
+   agent any
      tools {
             maven 'Maven3' // This must match the name configured in Global Tool Configuration
         }
