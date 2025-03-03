@@ -1,5 +1,8 @@
 pipeline {
     agent any
+     tools {
+            maven 'Maven3' // This must match the name configured in Global Tool Configuration
+        }
     environment {
         PROJECT_ID = 'nifty-jet-445804-n1'
         REGION = 'us-central1'
