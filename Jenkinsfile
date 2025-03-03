@@ -30,15 +30,19 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 // Build the Docker image using the Dockerfile in the repo
-                sh "docker build -t ${IMAGE_NAME} ."
+                 docker.image('docker:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock') {
+                                        sh "docker build -t ${IMAGE_NAME} ."
+                                    }
             }
         }
         stage('Push Docker Image to GCR') {
             steps {
                 // Authenticate Docker to GCR (if not already configured)
-                sh 'gcloud auth configure-docker'
-                // Push the image to GCR
-                sh "docker push ${IMAGE_NAME}"
+              docker.image('docker:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock') {
+                                      // Authenticate with GCR and push the image.
+                                      sh 'gcloud auth configure-docker'
+                                      sh "docker push ${IMAGE_NAME}"
+                                  }
             }
         }
         stage('Deploy to GKE') {
